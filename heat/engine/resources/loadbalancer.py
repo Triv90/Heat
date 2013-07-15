@@ -69,8 +69,7 @@ lb_template = r'''
             },
             "services": {
               "systemd": {
-                "crond"     : { "enabled" : "true", "ensureRunning" : "true" },
-                "haproxy"   : { "enabled": "true", "ensureRunning": "true" }
+                "crond"     : { "enabled" : "true", "ensureRunning" : "true" }
               }
             },
             "files": {
@@ -110,7 +109,7 @@ lb_template = r'''
                   "[reload]\n",
                   "triggers=post.update\n",
                   "path=Resources.LB_instance.Metadata\n",
-                  "action=systemctl reload haproxy.service\n",
+                  "action=systemctl reload-or-restart haproxy.service\n",
                   "runas=root\n"
                 ]]},
                 "mode"    : "000400",
