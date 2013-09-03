@@ -49,8 +49,18 @@ class KeystoneClient(object):
             logger.error("Keystone connection failed, no password or " +
                          "auth_token!")
             return
+
+        kwargs['cacert'] = self._get_client_option('ca_file')
+        kwargs['insecure'] = self._get_client_option('insecure')
+        kwargs['cert'] = self._get_client_option('cert_file')
+        kwargs['key'] = self._get_client_option('key_file')
+
         self.client = kc.Client(**kwargs)
         self.client.authenticate()
+
+    def _get_client_option(self, option):
+        return getattr(getattr(cfg.CONF, 'clients_keystone'), option) or \
+            getattr(cfg.CONF.clients, option)
 
     def create_stack_user(self, username, password=''):
         """

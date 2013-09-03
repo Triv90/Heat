@@ -115,11 +115,25 @@ rpc_opts = [
                default='engine',
                help='the topic engine nodes listen on')]
 
+clients_opts = [
+    cfg.StrOpt('ca_file',
+               help='Optional CA cert file to use in SSL connections'),
+    cfg.StrOpt('cert_file',
+               help='Optional PEM-formatted certificate chain file'),
+    cfg.StrOpt('key_file',
+               help='Optional PEM-formatted file that contains the '
+                    'private key'),
+    cfg.BoolOpt('insecure',
+                default=False,
+                help="If set then the server's certificate will not"
+                     "be verified")]
+
 
 def register_api_opts():
     cfg.CONF.register_opts(bind_opts)
     cfg.CONF.register_opts(rpc_opts)
     rpc.set_defaults(control_exchange='heat')
+    register_clients_opts()
 
 
 def register_db_opts():
@@ -131,6 +145,13 @@ def register_engine_opts():
     cfg.CONF.register_opts(service_opts)
     cfg.CONF.register_opts(rpc_opts)
     rpc.set_defaults(control_exchange='heat')
+    register_clients_opts()
+
+
+def register_clients_opts():
+    cfg.CONF.register_opts(clients_opts, group='clients')
+    for client in ('nova', 'swift', 'quantum', 'cinder', 'keystone'):
+        cfg.CONF.register_opts(clients_opts, group='clients_' + client)
 
 
 def _register_paste_deploy_opts():

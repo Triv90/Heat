@@ -95,6 +95,9 @@ class OpenStackClients(object):
             logger.error("Nova connection failed, no password or auth_token!")
             return None
 
+        args['cacert'] = self._get_client_option('nova', 'ca_file')
+        args['insecure'] = self._get_client_option('nova', 'insecure')
+
         client = None
         try:
             # Workaround for issues with python-keyring, need no_cache=True
@@ -148,6 +151,9 @@ class OpenStackClients(object):
                          "auth_token!")
             return None
 
+        args['cacert'] = self._get_client_option('swift', 'ca_file')
+        args['insecure'] = self._get_client_option('swift', 'insecure')
+
         self._swift = swiftclient.Connection(**args)
         return self._swift
 
@@ -178,6 +184,9 @@ class OpenStackClients(object):
                          "no password or auth_token!")
             return None
         logger.debug('quantum args %s', args)
+
+        #args['ca_cert'] = self._get_client_option('quantum', 'ca_file')
+        args['insecure'] = self._get_client_option('quantum', 'insecure')
 
         self._quantum = quantumclient.Client(**args)
 
@@ -211,9 +220,16 @@ class OpenStackClients(object):
             return None
         logger.debug('cinder args %s', args)
 
+        args['cacert'] = self._get_client_option('cinder', 'ca_file')
+        args['insecure'] = self._get_client_option('cinder', 'insecure')
+
         self._cinder = cinderclient.Client(**args)
 
         return self._cinder
+
+    def _get_client_option(self, client, option):
+        return getattr(getattr(cfg.CONF, 'clients_' + client), option) or \
+            getattr(cfg.CONF.clients, option)
 
     def attach_volume_to_instance(self, server_id, volume_id, device_id):
         logger.warn('Attaching InstanceId %s VolumeId %s Device %s' %
