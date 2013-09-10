@@ -150,7 +150,7 @@ def get_client(host, port=None, username=None,
                password=None, tenant=None,
                auth_url=None, auth_strategy=None,
                auth_token=None, region=None,
-               is_silent_upload=False, insecure=False):
+               is_silent_upload=False, ca_file=None, insecure=False):
     """
     Returns a new client heat client object based on common kwargs.
     If an option isn't specified falls back to common environment variable
@@ -184,5 +184,6 @@ def get_client(host, port=None, username=None,
                   use_ssl=use_ssl,
                   auth_tok=auth_token,
                   creds=creds,
+                  ca_file=ca_file,
                   insecure=insecure,
                   service_type='cloudformation')

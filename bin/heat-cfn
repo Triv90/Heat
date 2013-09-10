@@ -423,6 +423,7 @@ def get_client(options):
                                   auth_strategy=options.auth_strategy,
                                   auth_token=options.auth_token,
                                   region=options.region,
+                                  ca_file=options.ca_file,
                                   insecure=options.insecure)
 
 
@@ -459,6 +460,10 @@ def create_options(parser):
                       "SSL (https) requests. The server's certificate will "
                       "not be verified against any certificate authorities. "
                       "This option should be used with caution.")
+    parser.add_option('-C', '--ca-file', dest="ca_file",
+                      metavar="CAFILE", default=None,
+                      help="Path of CA SSL certificate(s) used to verify"
+                      " the remote server's certificate.")
     parser.add_option('-A', '--auth_token', dest="auth_token",
                       metavar="TOKEN", default=None,
                       help="Authentication token to use to identify the "
