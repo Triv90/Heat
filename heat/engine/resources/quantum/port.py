@@ -22,26 +22,61 @@ logger = logging.getLogger(__name__)
 
 class Port(quantum.QuantumResource):
 
-    fixed_ip_schema = {'subnet_id': {'Type': 'String',
-                                     'Required': True},
-                       'ip_address': {'Type': 'String'}}
+    properties_schema = {
+        'network_id': {'Type': 'String', 'Required': True},
+        'name': {'Type': 'String'},
+        'value_specs': {'Type': 'Map', 'Default': {}},
+        'admin_state_up': {'Default': True, 'Type': 'Boolean'},
+        'fixed_ips': {
+            'Type': 'List',
+            'Schema': {'Type': 'Map', 'Schema': {
+                'subnet_id': {'Type': 'String', 'Required': True},
+                'ip_address': {'Type': 'String'}
+            }}
+        },
+        'mac_address': {'Type': 'String'},
+        'device_id': {'Type': 'String'},
+        'security_groups': {'Type': 'List'},
+        'allowed_address_pairs': {
+            'Type': 'List',
+            'Schema': {'Type': 'Map', 'Schema': {
+                'mac_address': {'Type': 'String'},
+                'ip_address': {'Type': 'String', 'Required': True}
+            }}
+        }
+    }
 
-    properties_schema = {'network_id': {'Type': 'String',
-                                        'Required': True},
-                         'name': {'Type': 'String'},
-                         'value_specs': {'Type': 'Map',
-                                         'Default': {}},
-                         'admin_state_up': {'Default': True,
-                                            'Type': 'Boolean'},
-                         'fixed_ips': {'Type': 'List',
-                                       'Schema': {'Type': 'Map',
-                                                  'Schema': fixed_ip_schema}},
-                         'mac_address': {'Type': 'String'},
-                         'device_id': {'Type': 'String'},
-                         'security_groups': {'Type': 'List'}}
+    attributes_schema = {
+        "admin_state_up": "the administrative state of this port",
+        "device_id": "unique identifier for the device",
+        "device_owner": "name of the network owning the port",
+        "fixed_ips": "fixed ip addresses",
+        "id": "the unique identifier for the port",
+        "mac_address": "mac address of the port",
+        "name": "friendly name of the port",
+        "network_id": "unique identifier for the network owning the port",
+        "security_groups": "a list of security groups for the port",
+        "status": "the status of the port",
+        "tenant_id": "tenant owning the port",
+        "allowed_address_pairs": "additional mac/ip address pairs allowed to "
+                                 "pass through a port"
+    }
 
     def __init__(self, name, json_snippet, stack):
         super(Port, self).__init__(name, json_snippet, stack)
+
+    # def add_dependencies(self, deps):
+    #     super(Port, self).add_dependencies(deps)
+    #     # Depend on any Subnet in this template with the same
+    #     # network_id as this network_id.
+    #     # It is not known which subnet a port might be assigned
+    #     # to so all subnets in a network should be created before
+    #     # the ports in that network.
+    #     for resource in self.stack.resources.itervalues():
+    #         if (resource.has_interface('OS::Quantum::Subnet') and
+    #             resource.properties.get('network_id') ==
+    #                 self.properties.get('network_id')):
+    #                     deps += (self, resource)
 
     def handle_create(self):
         props = self.prepare_properties(
