@@ -30,7 +30,7 @@ class Port(quantum.QuantumResource):
         'fixed_ips': {
             'Type': 'List',
             'Schema': {'Type': 'Map', 'Schema': {
-                'subnet_id': {'Type': 'String', 'Required': True},
+                'subnet_id': {'Type': 'String'},
                 'ip_address': {'Type': 'String'}
             }}
         },
@@ -82,6 +82,12 @@ class Port(quantum.QuantumResource):
         props = self.prepare_properties(
             self.properties,
             self.physical_resource_name())
+
+        for fixed_ip in props.get('fixed_ips', []):
+            for key, value in fixed_ip.items():
+                if value is None:
+                    fixed_ip.pop(key)
+
         port = self.quantum().create_port({'port': props})['port']
         self.resource_id_set(port['id'])
 
