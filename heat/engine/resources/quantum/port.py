@@ -88,6 +88,10 @@ class Port(quantum.QuantumResource):
                 if value is None:
                     fixed_ip.pop(key)
 
+        for pair in props.get('allowed_address_pairs', []):
+            if 'mac_address' in pair and pair['mac_address'] is None:
+                del pair['mac_address']
+
         port = self.quantum().create_port({'port': props})['port']
         self.resource_id_set(port['id'])
 
