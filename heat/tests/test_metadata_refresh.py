@@ -23,6 +23,7 @@ from oslo.config import cfg
 from heat.tests import fakes
 from heat.tests.utils import stack_delete_after
 
+from heat.db import api as db_api
 from heat.common import identifier
 from heat.common import template_format
 from heat.engine import parser
@@ -226,6 +227,7 @@ class WaitCondMetadataUpdateTest(unittest.TestCase):
         wc.WaitConditionHandle.identifier().MultipleTimes().AndReturn(id)
 
         self.m.StubOutWithMock(eventlet, 'sleep')
+        self.m.StubOutWithMock(db_api, 'user_creds_get')
 
         return stack
 
@@ -260,7 +262,8 @@ class WaitCondMetadataUpdateTest(unittest.TestCase):
 
         eventlet.sleep(mox.IsA(int)).WithSideEffects(check_empty)
         eventlet.sleep(mox.IsA(int)).WithSideEffects(post_success)
-
+        db_api.user_creds_get(mox.IgnoreArg()).MultipleTimes().AndReturn(
+            self.stack.context.to_dict())
         self.m.ReplayAll()
         self.stack.create()
 

@@ -71,6 +71,9 @@ class OpenStackClients(object):
         self._keystone = hkc.KeystoneClient(self.context)
         return self._keystone
 
+    def url_for(self, **kwargs):
+        return self.keystone().client.service_catalog.url_for(**kwargs)
+
     def nova(self, service_type='compute'):
         if service_type in self._nova:
             return self._nova[service_type]
@@ -175,9 +178,7 @@ class OpenStackClients(object):
             args['password'] = con.password
             args['tenant_name'] = con.tenant
         elif con.auth_token is not None:
-            args['username'] = con.service_user
-            args['password'] = con.service_password
-            args['tenant_name'] = con.service_tenant
+            args['endpoint_url'] = self.url_for(service_type='network')
             args['token'] = con.auth_token
         else:
             logger.error("Quantum connection failed, "
