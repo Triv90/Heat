@@ -12,6 +12,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from quantumclient.common.exceptions import QuantumClientException
 
 from heat.common import exception
 from heat.engine import resource
@@ -22,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 
 class QuantumResource(resource.Resource):
-
     def __init__(self, name, json_snippet, stack):
         super(QuantumResource, self).__init__(name, json_snippet, stack)
 
@@ -89,3 +89,33 @@ class QuantumResource(resource.Resource):
 
     def FnGetRefId(self):
         return unicode(self.resource_id)
+
+    @staticmethod
+    def get_secgroup_uuids(stack, props, props_name, rsrc_name, client):
+        """
+        Returns security group names in UUID form.
+
+        Args:
+        stack: stack associated with given resource
+        props: properties described in the template
+        props_name: name of security group property
+        rsrc_name: name of the given resource
+        client: reference to quantum client
+        """
+        seclist = []
+        for sg in props.get(props_name):
+            resource = stack.resource_by_refid(sg)
+            if resource is not None:
+                seclist.append(resource.resource_id)
+            else:
+                try:
+                    client.show_security_group(sg)
+                    seclist.append(sg)
+                except QuantumClientException as e:
+                    if e.status_code == 404:
+                        raise exception.InvalidTemplateAttribute(
+                            resource=rsrc_name,
+                            key=props_name)
+                    else:
+                        raise
+        return seclist

@@ -16,6 +16,8 @@
 from heat.engine import clients
 from heat.openstack.common import log as logging
 from heat.engine import resource
+from heat.engine.resources.quantum import quantum
+
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +64,11 @@ class NetworkInterface(resource.Resource):
         }
 
         if self.properties['GroupSet']:
-            props['security_groups'] = self.properties['GroupSet']
+            sgs = quantum.QuantumResource.get_secgroup_uuids(
+                self.stack, self.properties, 'GroupSet', self.name,
+                self.quantum())
+            props['security_groups'] = sgs
+
         port = client.create_port({'port': props})['port']
         self.resource_id_set(port['id'])
 

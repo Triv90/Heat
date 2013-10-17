@@ -92,6 +92,11 @@ class Port(quantum.QuantumResource):
             if 'mac_address' in pair and pair['mac_address'] is None:
                 del pair['mac_address']
 
+        if self.properties['security_groups']:
+            props['security_groups'] = self.get_secgroup_uuids(
+                self.stack, self.properties, 'security_groups', self.name,
+                self.quantum())
+
         port = self.quantum().create_port({'port': props})['port']
         self.resource_id_set(port['id'])
 
