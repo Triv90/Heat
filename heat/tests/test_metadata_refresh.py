@@ -136,10 +136,8 @@ class MetadataRefreshTest(unittest.TestCase):
 
     # Note tests creating a stack should be decorated with @stack_delete_after
     # to ensure the stack is properly cleaned up
-    def create_stack(self, stack_name='test_stack',
-                     template=test_template_metadata, params={},
-                     stub=True):
-        temp = template_format.parse(template)
+    def create_stack(self, stack_name='test_stack', params={}):
+        temp = template_format.parse(test_template_metadata)
         template = parser.Template(temp)
         parameters = parser.Parameters(stack_name, template, params)
         ctx = context.get_admin_context()
@@ -149,12 +147,13 @@ class MetadataRefreshTest(unittest.TestCase):
 
         self.stack_id = stack.store()
 
-        if stub:
-            self.m.StubOutWithMock(instance.Instance, 'handle_create')
-            self.m.StubOutWithMock(instance.Instance, 'check_active')
-            instance.Instance.handle_create().AndReturn(None)
-            instance.Instance.check_active().AndReturn(True)
-            self.m.StubOutWithMock(instance.Instance, 'FnGetAtt')
+        self.m.StubOutWithMock(instance.Instance, 'handle_create')
+        self.m.StubOutWithMock(instance.Instance, 'check_active')
+        instance.Instance.handle_create().AndReturn(None)
+        instance.Instance.check_active().AndReturn(True)
+        instance.Instance.handle_create().AndReturn(None)
+        instance.Instance.check_active().AndReturn(True)
+        self.m.StubOutWithMock(instance.Instance, 'FnGetAtt')
 
         return stack
 
@@ -169,6 +168,8 @@ class MetadataRefreshTest(unittest.TestCase):
 
         self.m.ReplayAll()
         self.stack.create()
+
+        self.assertEqual(self.stack.state, self.stack.CREATE_COMPLETE)
 
         s1 = self.stack.resources['S1']
         s2 = self.stack.resources['S2']
@@ -203,9 +204,8 @@ class WaitCondMetadataUpdateTest(unittest.TestCase):
 
     # Note tests creating a stack should be decorated with @stack_delete_after
     # to ensure the stack is properly cleaned up
-    def create_stack(self, stack_name='test_stack',
-                     template=test_template_metadata):
-        temp = template_format.parse(template)
+    def create_stack(self, stack_name='test_stack'):
+        temp = template_format.parse(test_template_waitcondition)
         template = parser.Template(temp)
         parameters = parser.Parameters(stack_name, template, {})
         stack = parser.Stack(self.ctx, stack_name, template, parameters,
@@ -215,7 +215,8 @@ class WaitCondMetadataUpdateTest(unittest.TestCase):
 
         self.m.StubOutWithMock(instance.Instance, 'handle_create')
         self.m.StubOutWithMock(instance.Instance, 'check_active')
-        instance.Instance.handle_create().MultipleTimes().AndReturn(None)
+
+        instance.Instance.handle_create().AndReturn(None)
         instance.Instance.check_active().AndReturn(True)
 
         self.m.StubOutWithMock(wc.WaitConditionHandle, 'keystone')
@@ -241,7 +242,7 @@ class WaitCondMetadataUpdateTest(unittest.TestCase):
         5 assert valid instance metadata
         '''
 
-        self.stack = self.create_stack(template=test_template_waitcondition)
+        self.stack = self.create_stack()
 
         watch = self.stack['WC']
         inst = self.stack['S1']
@@ -266,6 +267,8 @@ class WaitCondMetadataUpdateTest(unittest.TestCase):
             self.stack.context.to_dict())
         self.m.ReplayAll()
         self.stack.create()
+
+        self.assertEqual(self.stack.state, self.stack.CREATE_COMPLETE)
 
         self.assertEqual(watch.FnGetAtt('Data'), '{"123": "foo"}')
         self.assertEqual(inst.metadata['test'], '{"123": "foo"}')
