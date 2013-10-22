@@ -186,7 +186,7 @@ class OpenStackClients(object):
             return None
         logger.debug('quantum args %s', args)
 
-        #args['ca_cert'] = self._get_client_option('quantum', 'ca_file')
+        args['ca_cert'] = self._get_client_option('quantum', 'ca_file')
         args['insecure'] = self._get_client_option('quantum', 'insecure')
 
         self._quantum = quantumclient.Client(**args)
