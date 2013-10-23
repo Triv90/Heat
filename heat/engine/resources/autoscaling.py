@@ -397,6 +397,7 @@ class LaunchConfiguration(resource.Resource):
                      'Implemented': False},
         'RamDiskId': {'Type': 'String',
                       'Implemented': False},
+        'BootFromVolume': {'Type': 'Boolean'},
         'BlockDeviceMappings': {'Type': 'String',
                                 'Implemented': False},
         'NovaSchedulerHints': {'Type': 'List',

@@ -104,7 +104,9 @@ class Instance(resource.Resource):
                                      'AllowedValues': ['dedicated', 'default'],
                                      'Implemented': False},
                          'UserData': {'Type': 'String'},
-                         'Volumes': {'Type': 'List'}}
+                         'Volumes': {'Type': 'List'},
+                         'BootFromVolume': {'Type': 'Boolean',
+                                            'Default': False}}
 
     # template keys supported for handle_update, note trailing comma
     # is required for a single item to get a tuple not a string
@@ -257,6 +259,26 @@ class Instance(resource.Resource):
 
         return nics
 
+    def _build_boot_from_volume(self, size, image_id):
+        if not size:
+            return None
+
+        vol = self.cinder().volumes.create(
+            size,
+            display_name=self.physical_resource_name(),
+            display_description=self.physical_resource_name(),
+            imageRef=image_id)
+        while vol.status == 'creating' or vol.status == 'downloading':
+            eventlet.sleep(1)
+            vol.get()
+        if vol.status == 'available':
+            self.volume_id = vol.id
+        else:
+            raise exception.Error(vol.status)
+        bdm_dict = {}
+        bdm_dict["vda"] = self.volume_id + ":::1"
+        return bdm_dict
+
     def handle_create(self):
         if self.properties.get('SecurityGroups') is None:
             security_groups = None
@@ -268,6 +290,7 @@ class Instance(resource.Resource):
         flavor = self.properties['InstanceType']
         key_name = self.properties['KeyName']
         availability_zone = self.properties['AvailabilityZone']
+        block_device_mapping = None
 
         keypairs = [k.name for k in self.nova().keypairs.list()]
         if key_name not in keypairs and key_name is not None:
@@ -279,6 +302,12 @@ class Instance(resource.Resource):
         for o in image_list:
             if o.name == image_name:
                 image_id = o.id
+                boot_volume_size = 0
+                if 'minDisk' in o._info:
+                    boot_volume_size = o._info['minDisk']
+                if 'OS-EXT-IMG-SIZE:size' in o._info:
+                    img_size = o._info['OS-EXT-IMG-SIZE:size'] / 10 ** 9 + 1
+                    boot_volume_size = max(boot_volume_size, img_size)
                 break
 
         if image_id is None:
@@ -310,6 +339,10 @@ class Instance(resource.Resource):
 
         nics = self._build_nics(self.properties['NetworkInterfaces'],
                                 subnet_id=self.properties['SubnetId'])
+        if self.properties['BootFromVolume']:
+            block_device_mapping = self._build_boot_from_volume(
+                boot_volume_size,
+                image_id)
 
         server_userdata = self._build_userdata(userdata)
         server = None
@@ -324,7 +357,8 @@ class Instance(resource.Resource):
                 meta=tags,
                 scheduler_hints=scheduler_hints,
                 nics=nics,
-                availability_zone=availability_zone)
+                availability_zone=availability_zone,
+                block_device_mapping=block_device_mapping)
         finally:
             # Avoid a race condition where the thread could be cancelled
             # before the ID is stored
