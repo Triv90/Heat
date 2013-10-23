@@ -104,7 +104,9 @@ class Instance(resource.Resource):
                                      'AllowedValues': ['dedicated', 'default'],
                                      'Implemented': False},
                          'UserData': {'Type': 'String'},
-                         'Volumes': {'Type': 'List'}}
+                         'Volumes': {'Type': 'List'},
+                         'BootFromVolumeSize': {'Type': 'Number'}
+}
 
     # template keys supported for handle_update, note trailing comma
     # is required for a single item to get a tuple not a string
@@ -257,6 +259,26 @@ class Instance(resource.Resource):
 
         return nics
 
+    def _build_boot_from_volume(self, size, image_id):
+        if not size:
+            return None
+
+        vol = self.cinder().volumes.create(
+            size,
+            display_name=self.physical_resource_name(),
+            display_description=self.physical_resource_name(),
+            imageRef=image_id)
+        while vol.status == 'creating' or vol.status == 'downloading':
+            eventlet.sleep(1)
+            vol.get()
+        if vol.status == 'available':
+            self.volume_id = vol.id
+        else:
+            raise exception.Error(vol.status)
+        bdm_dict = {}
+        bdm_dict["vda"] = self.volume_id + ":::1"
+        return bdm_dict
+
     def handle_create(self):
         if self.properties.get('SecurityGroups') is None:
             security_groups = None
@@ -310,6 +332,9 @@ class Instance(resource.Resource):
 
         nics = self._build_nics(self.properties['NetworkInterfaces'],
                                 subnet_id=self.properties['SubnetId'])
+        block_device_mapping = self._build_boot_from_volume(
+            self.properties['BootFromVolumeSize'],
+            image_id)
 
         server_userdata = self._build_userdata(userdata)
         server = None
@@ -324,7 +349,8 @@ class Instance(resource.Resource):
                 meta=tags,
                 scheduler_hints=scheduler_hints,
                 nics=nics,
-                availability_zone=availability_zone)
+                availability_zone=availability_zone,
+                block_device_mapping=block_device_mapping)
         finally:
             # Avoid a race condition where the thread could be cancelled
             # before the ID is stored
