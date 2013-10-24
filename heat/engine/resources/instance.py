@@ -105,8 +105,8 @@ class Instance(resource.Resource):
                                      'Implemented': False},
                          'UserData': {'Type': 'String'},
                          'Volumes': {'Type': 'List'},
-                         'BootFromVolumeSize': {'Type': 'Number'}
-}
+                         'BootFromVolume': {'Type': 'Boolean',
+                                            'Default': False}}
 
     # template keys supported for handle_update, note trailing comma
     # is required for a single item to get a tuple not a string
@@ -290,6 +290,7 @@ class Instance(resource.Resource):
         flavor = self.properties['InstanceType']
         key_name = self.properties['KeyName']
         availability_zone = self.properties['AvailabilityZone']
+        block_device_mapping = None
 
         keypairs = [k.name for k in self.nova().keypairs.list()]
         if key_name not in keypairs and key_name is not None:
@@ -312,6 +313,7 @@ class Instance(resource.Resource):
         for o in flavor_list:
             if o.name == flavor:
                 flavor_id = o.id
+                boot_volume_size = o.disk
                 break
         if flavor_id is None:
             raise exception.FlavorMissing(flavor_id=flavor)
@@ -332,9 +334,10 @@ class Instance(resource.Resource):
 
         nics = self._build_nics(self.properties['NetworkInterfaces'],
                                 subnet_id=self.properties['SubnetId'])
-        block_device_mapping = self._build_boot_from_volume(
-            self.properties['BootFromVolumeSize'],
-            image_id)
+        if self.properties['BootFromVolume']:
+            block_device_mapping = self._build_boot_from_volume(
+                boot_volume_size,
+                image_id)
 
         server_userdata = self._build_userdata(userdata)
         server = None
