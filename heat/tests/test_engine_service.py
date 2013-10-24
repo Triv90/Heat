@@ -78,8 +78,8 @@ def setup_mocks(mocks, stack):
     fc.servers.create(image=744, flavor=3, key_name='test',
                       name='%s.WebServer' % stack.name, security_groups=None,
                       userdata=server_userdata, scheduler_hints=None,
-                      meta=None, nics=None,
-                      availability_zone=None).AndReturn(
+                      meta=None, nics=None, availability_zone=None,
+                      block_device_mapping=None).AndReturn(
                           fc.servers.list()[-1])
     return fc
 

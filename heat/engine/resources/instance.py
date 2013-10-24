@@ -302,6 +302,12 @@ class Instance(resource.Resource):
         for o in image_list:
             if o.name == image_name:
                 image_id = o.id
+                boot_volume_size = 0
+                if 'minDisk' in o._info:
+                    boot_volume_size = o._info['minDisk']
+                if 'OS-EXT-IMG-SIZE:size' in o._info:
+                    img_size = o._info['OS-EXT-IMG-SIZE:size'] / 10 ** 9 + 1
+                    boot_volume_size = max(boot_volume_size, img_size)
                 break
 
         if image_id is None:
@@ -313,7 +319,6 @@ class Instance(resource.Resource):
         for o in flavor_list:
             if o.name == flavor:
                 flavor_id = o.id
-                boot_volume_size = o.disk
                 break
         if flavor_id is None:
             raise exception.FlavorMissing(flavor_id=flavor)

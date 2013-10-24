@@ -183,7 +183,7 @@ class instancesTest(unittest.TestCase):
             security_groups=None,
             userdata=server_userdata, scheduler_hints=None, meta=None,
             nics=[{'port-id': '64d913c1-bcb1-42d2-8f0a-9593dbcaf251'}],
-            availability_zone=None).AndReturn(
+            availability_zone=None, block_device_mapping=None).AndReturn(
                 return_server)
         self.m.ReplayAll()
 
@@ -229,7 +229,7 @@ class instancesTest(unittest.TestCase):
             security_groups=None,
             userdata=server_userdata, scheduler_hints=None, meta=None,
             nics=[{'port-id': '64d913c1-bcb1-42d2-8f0a-9593dbcaf251'}],
-            availability_zone=None).AndReturn(
+            availability_zone=None, block_device_mapping=None).AndReturn(
                 return_server)
         self.m.ReplayAll()
 
